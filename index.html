@@ -2,9 +2,10 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 모바일 반응형 핵심 meta 태그 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>밀폐공간 작업 안전관리 시스템</title>
-    <!-- PDF 출력 및 엑셀 내보내기 외부 라이브러리 -->
+    <!-- 외부 라이브러리 (PDF 및 엑셀) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -14,10 +15,15 @@
             --bg-light: #f8fafc;
         }
 
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
-            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             background-color: #f1f5f9;
             color: #1e293b;
         }
@@ -26,30 +32,39 @@
             max-width: 1100px;
             margin: 0 auto;
             background: #ffffff;
-            padding: 25px;
+            padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         }
 
-        /* 탭 스타일 */
+        /* 모바일 상단 고정 탭 메뉴 */
         .tab-menu {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 4px;
+            margin-bottom: 15px;
             border-bottom: 2px solid #cbd5e1;
-            padding-bottom: 10px;
+            padding-bottom: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 100;
+            padding-top: 5px;
         }
 
         .tab-btn {
-            padding: 10px 20px;
-            font-size: 15px;
+            flex: 1 0 auto;
+            padding: 12px 14px;
+            font-size: 14px;
             font-weight: bold;
             border: none;
-            background: #e2e8f0;
+            background: #f1f5f9;
             color: #475569;
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.2s;
+            text-align: center;
         }
 
         .tab-btn.active {
@@ -65,38 +80,43 @@
             display: block;
         }
 
-        /* 컨트롤 박스 (검색 및 내보내기 버튼) */
+        /* 컨트롤 박스 (모바일 터치 대응) */
         .control-panel {
             background: #f8fafc;
             border: 1px solid #cbd5e1;
-            padding: 15px;
+            padding: 12px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .search-group, .action-btns {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
+            gap: 6px;
+            width: 100%;
         }
 
-        .search-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .search-group select, .search-group input {
+            flex: 1;
+            min-width: 120px;
         }
 
-        .action-btns {
-            display: flex;
-            gap: 8px;
+        .action-btns .btn {
+            flex: 1;
+            min-width: 80px;
         }
 
         .btn {
-            padding: 8px 16px;
+            padding: 12px 14px; /* 터치 영역 확대 */
             font-size: 14px;
             font-weight: bold;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            touch-action: manipulation;
         }
 
         .btn-primary { background: #2563eb; color: white; }
@@ -104,18 +124,18 @@
         .btn-danger { background: #dc2626; color: white; }
         .btn-dark { background: #334155; color: white; }
 
-        /* 입력 폼 스타일 */
+        /* 모바일 전용 입력 폼 그리드 */
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
 
         .form-group label {
@@ -125,19 +145,27 @@
         }
 
         .form-group input, .form-group select {
-            padding: 8px;
+            padding: 10px; /* 모바일 입력창 높이 확대 */
             border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 6px;
+            font-size: 15px; /* 모바일 자동 확대 방지 (16px 권장) */
         }
 
-        /* 서식 문서 출력용 스타일 */
+        /* 테이블 모바일 스크롤 컨테이너 */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 10px;
+            border: 1px solid #000;
+        }
+
+        /* 서식 문서 영역 */
         .doc-sheet {
             background: white;
-            padding: 20px;
-            border: 1px solid #000;
+            padding: 12px;
             color: #000;
-            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            min-width: 800px; /* 모바일 스크롤 시 양식 보존 */
         }
 
         .doc-header {
@@ -148,30 +176,28 @@
         }
 
         .doc-title {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: bold;
             text-align: center;
             flex-grow: 1;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
-        /* 최상단 우측 최종 결재란 테이블 */
         .approval-table {
             border-collapse: collapse;
-            width: 200px;
+            width: 180px;
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .approval-table th, .approval-table td {
             border: 1px solid #000;
-            padding: 4px;
+            padding: 3px;
         }
 
         .approval-table th {
             background: #f2f2f2;
             width: 20px;
-            font-weight: normal;
         }
 
         .doc-info-table {
@@ -193,7 +219,7 @@
             text-align: center;
         }
 
-        /* 데이터 메인 표 서식 */
+        /* 데이터 데이터 테이블 */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -203,8 +229,8 @@
 
         .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 5px 2px;
-            height: 24px;
+            padding: 6px 2px;
+            height: 28px;
         }
 
         .data-table th {
@@ -214,37 +240,36 @@
 
         .status-badge {
             display: inline-block;
-            padding: 2px 6px;
+            padding: 3px 6px;
             border-radius: 4px;
             font-size: 10px;
             font-weight: bold;
         }
-        .status-pending { background: #fef3c7; color: #d97706; }
         .status-approved { background: #dcfce7; color: #15803d; }
 
-        /* 인쇄 및 PDF 인쇄 시 제외될 관리 버튼 컬럼 */
         @media print {
             body { padding: 0; background: white; }
             .main-container { box-shadow: none; padding: 0; max-width: 100%; }
             .tab-menu, .control-panel, .btn-action-row { display: none !important; }
-            .doc-sheet { border: none; padding: 0; }
+            .doc-sheet { border: none; padding: 0; min-width: 100%; }
+            .table-responsive { border: none; overflow: visible; }
         }
     </style>
 </head>
 <body>
 
 <div class="main-container">
-    <!-- 탭 네비게이션 -->
+    <!-- 모바일 최적화 스티키 탭 메뉴 -->
     <div class="tab-menu">
         <button class="tab-btn active" onclick="switchTab('gas-input')">1. 가스측정 등록</button>
         <button class="tab-btn" onclick="switchTab('entry-input')">2. 출입인원 등록</button>
-        <button class="tab-btn" onclick="switchTab('gas-view')">3. 가스측정 일지 (탐색/결재)</button>
-        <button class="tab-btn" onclick="switchTab('entry-view')">4. 출입인원 점검 (탐색/결재)</button>
+        <button class="tab-btn" onclick="switchTab('gas-view')">3. 가스측정일지</button>
+        <button class="tab-btn" onclick="switchTab('entry-view')">4. 출입인원점검</button>
     </div>
 
     <!-- 1. 가스 측정 데이터 입력 폼 -->
     <div id="gas-input" class="tab-content active">
-        <h3>산소 및 유해가스 측정 데이터 기입</h3>
+        <h3 style="margin-top:0;">가스 측정 데이터 입력</h3>
         <form id="gasForm">
             <div class="form-grid">
                 <div class="form-group"><label>측정일자</label><input type="date" id="g_date" required></div>
@@ -254,23 +279,24 @@
                 <div class="form-group"><label>측정위치</label><input type="text" id="g_pos" placeholder="예: 상부/중부/하부" required></div>
             </div>
             <div class="form-grid">
-                <div class="form-group"><label>산소 O₂ (18~23.5%)</label><input type="number" step="0.1" id="g_o2" placeholder="%" required></div>
-                <div class="form-group"><label>가연성가스 LEL (&lt;10%)</label><input type="number" step="0.1" id="g_lel" placeholder="%" required></div>
-                <div class="form-group"><label>일산화탄소 CO (&lt;30ppm)</label><input type="number" step="0.1" id="g_co" placeholder="ppm" required></div>
-                <div class="form-group"><label>이산화탄소 CO₂ (&lt;1.5%)</label><input type="number" step="0.1" id="g_co2" value="0" required></div>
-                <div class="form-group"><label>황화수소 H₂S (&lt;10ppm)</label><input type="number" step="0.1" id="g_h2s" placeholder="ppm" required></div>
+                <!-- inputmode="decimal" 설정으로 모바일 키패드 자동전환 -->
+                <div class="form-group"><label>산소 O₂ (18~23.5%)</label><input type="number" step="0.1" inputmode="decimal" id="g_o2" placeholder="%" required></div>
+                <div class="form-group"><label>가연성가스 LEL (&lt;10%)</label><input type="number" step="0.1" inputmode="decimal" id="g_lel" placeholder="%" required></div>
+                <div class="form-group"><label>일산화탄소 CO (&lt;30ppm)</label><input type="number" step="0.1" inputmode="decimal" id="g_co" placeholder="ppm" required></div>
+                <div class="form-group"><label>이산화탄소 CO₂ (&lt;1.5%)</label><input type="number" step="0.1" inputmode="decimal" id="g_co2" value="0" required></div>
+                <div class="form-group"><label>황화수소 H₂S (&lt;10ppm)</label><input type="number" step="0.1" inputmode="decimal" id="g_h2s" placeholder="ppm" required></div>
             </div>
             <div class="form-grid">
                 <div class="form-group"><label>측정자 성명</label><input type="text" id="g_inspector" required></div>
                 <div class="form-group"><label>안전감시자 성명</label><input type="text" id="g_watcher" required></div>
             </div>
-            <button type="button" class="btn btn-primary" onclick="addGasData()" style="width:100%; padding:12px;">가스 측정 데이터 기록 저장</button>
+            <button type="button" class="btn btn-primary" onclick="addGasData()" style="width:100%; margin-top:5px;">가스 측정 기록 저장</button>
         </form>
     </div>
 
     <!-- 2. 출입인원 점검 입력 폼 -->
     <div id="entry-input" class="tab-content">
-        <h3>밀폐공간작업 출입인원 데이터 기입</h3>
+        <h3 style="margin-top:0;">출입인원 데이터 입력</h3>
         <form id="entryForm">
             <div class="form-grid">
                 <div class="form-group"><label>작업일자</label><input type="date" id="e_date" required></div>
@@ -280,7 +306,7 @@
                 <div class="form-group"><label>나가는 시간 (퇴실)</label><input type="time" id="e_out"></div>
                 <div class="form-group"><label>비고 / 작업내용</label><input type="text" id="e_note" placeholder="예: 소방펌프 점검"></div>
             </div>
-            <button type="button" class="btn btn-primary" onclick="addEntryData()" style="width:100%; padding:12px;">출입 기록 저장</button>
+            <button type="button" class="btn btn-primary" onclick="addEntryData()" style="width:100%; margin-top:5px;">출입 기록 저장</button>
         </form>
     </div>
 
@@ -294,78 +320,76 @@
                     <option value="year">연단위</option>
                 </select>
                 <input type="date" id="gasSearchDate">
-                <button class="btn btn-primary" onclick="renderGasTable()">검색</button>
+                <button class="btn btn-primary" onclick="renderGasTable()">조회</button>
             </div>
             <div class="action-btns">
-                <button class="btn btn-success" onclick="exportToExcel('gas-sheet-area', '산소및유해가스측정일지')">엑셀 내보내기</button>
-                <button class="btn btn-danger" onclick="exportToPDF('gas-sheet-area', '산소및유해가스측정일지')">PDF 저장</button>
+                <button class="btn btn-success" onclick="exportToExcel('gas-sheet-area', '산소및유해가스측정일지')">엑셀</button>
+                <button class="btn btn-danger" onclick="exportToPDF('gas-sheet-area', '산소및유해가스측정일지')">PDF</button>
                 <button class="btn btn-dark" onclick="window.print()">인쇄</button>
             </div>
         </div>
 
-        <!-- 출력용 서식 영역 -->
-        <div class="doc-sheet" id="gas-sheet-area">
-            <div class="doc-header">
-                <div style="width: 200px;"></div>
-                <div class="doc-title">산소 및 유해가스 측정</div>
-                <!-- 최상단 우측 최종 결재란 -->
-                <table class="approval-table">
+        <div class="table-responsive">
+            <div class="doc-sheet" id="gas-sheet-area">
+                <div class="doc-header">
+                    <div style="width: 180px;"></div>
+                    <div class="doc-title">산소 및 유해가스 측정</div>
+                    <table class="approval-table">
+                        <tr>
+                            <th rowspan="2">결<br>재</th>
+                            <td>담당</td>
+                            <td>P/L</td>
+                            <td>팀장</td>
+                        </tr>
+                        <tr>
+                            <td style="height:30px;"></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="font-size: 10px; margin-bottom: 4px;">
+                    <b>적정공기 :</b> 산소 18~23.5% / 이산화탄소 1.5% 미만 / 일산화탄소 30ppm 미만 / 황화수소 10ppm 미만 / 가연성가스 10%LEL 미만
+                </div>
+
+                <table class="doc-info-table">
                     <tr>
-                        <th rowspan="2">결<br>재</th>
-                        <td>담당</td>
-                        <td>P/L</td>
-                        <td>팀장</td>
+                        <td class="info-header" style="width: 12%;">작업내용</td>
+                        <td id="gas-doc-work">상부/하부 설비 점검 및 가스 측정</td>
+                        <td class="info-header" style="width: 12%;">측정시기</td>
+                        <td style="width: 35%; text-align: center;">작업시작 전, 작업 중, 재출입전</td>
                     </tr>
                     <tr>
-                        <td style="height:35px;"></td>
-                        <td></td>
-                        <td></td>
+                        <td class="info-header">작업장소</td>
+                        <td id="gas-doc-location" colspan="3">현장 지정 밀폐공간 전체</td>
                     </tr>
                 </table>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="width: 30px;">NO</th>
+                            <th colspan="2">측정일</th>
+                            <th rowspan="2" style="width: 70px;">측정<br>위치</th>
+                            <th colspan="5">측정결과</th>
+                            <th rowspan="2" style="width: 60px;">측정자<br>성명</th>
+                            <th rowspan="2" style="width: 60px;">안전감시자<br>서명</th>
+                            <th rowspan="2" class="btn-action-row" style="width: 110px;">관리</th>
+                        </tr>
+                        <tr>
+                            <th style="width: 65px;">일자</th>
+                            <th style="width: 45px;">시간</th>
+                            <th style="width: 40px;">산소</th>
+                            <th style="width: 50px;">가연성가스</th>
+                            <th style="width: 55px;">일산화탄소</th>
+                            <th style="width: 55px;">이산화탄소</th>
+                            <th style="width: 50px;">황화수소</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gasTableBody"></tbody>
+                </table>
             </div>
-
-            <div style="font-size: 10px; margin-bottom: 4px;">
-                <b>적정공기 :</b> 산소 18~23.5% / 이산화탄소 1.5% 미만 / 일산화탄소 30ppm 미만 / 황화수소 10ppm 미만 / 가연성가스 10%LEL 미만
-            </div>
-
-            <table class="doc-info-table">
-                <tr>
-                    <td class="info-header" style="width: 12%;">작업내용</td>
-                    <td id="gas-doc-work">상부/하부 설비 점검 및 가스 측정</td>
-                    <td class="info-header" style="width: 12%;">측정시기</td>
-                    <td style="width: 35%; text-align: center;">작업시작 전, 작업 중, 재출입전</td>
-                </tr>
-                <tr>
-                    <td class="info-header">작업장소</td>
-                    <td id="gas-doc-location" colspan="3">현장 지정 밀폐공간 전체</td>
-                </tr>
-            </table>
-
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th rowspan="2" style="width: 30px;">NO</th>
-                        <th colspan="2">측정일</th>
-                        <th rowspan="2" style="width: 70px;">측정<br>위치</th>
-                        <th colspan="5">측정결과</th>
-                        <th rowspan="2" style="width: 60px;">측정자<br>성명</th>
-                        <th rowspan="2" style="width: 60px;">안전감시자<br>서명</th>
-                        <th rowspan="2" class="btn-action-row" style="width: 110px;">관리 (결재 / 삭제)</th>
-                    </tr>
-                    <tr>
-                        <th style="width: 65px;">일자</th>
-                        <th style="width: 45px;">시간</th>
-                        <th style="width: 40px;">산소</th>
-                        <th style="width: 50px;">가연성가스</th>
-                        <th style="width: 55px;">일산화탄소</th>
-                        <th style="width: 55px;">이산화탄소</th>
-                        <th style="width: 50px;">황화수소</th>
-                    </tr>
-                </thead>
-                <tbody id="gasTableBody">
-                    <!-- 스크립트로 내용이 들어갑니다 -->
-                </tbody>
-            </table>
         </div>
     </div>
 
@@ -379,61 +403,59 @@
                     <option value="year">연단위</option>
                 </select>
                 <input type="date" id="entrySearchDate">
-                <button class="btn btn-primary" onclick="renderEntryTable()">검색</button>
+                <button class="btn btn-primary" onclick="renderEntryTable()">조회</button>
             </div>
             <div class="action-btns">
-                <button class="btn btn-success" onclick="exportToExcel('entry-sheet-area', '밀폐공간작업_출입인원점검')">엑셀 내보내기</button>
-                <button class="btn btn-danger" onclick="exportToPDF('entry-sheet-area', '밀폐공간작업_출입인원점검')">PDF 저장</button>
+                <button class="btn btn-success" onclick="exportToExcel('entry-sheet-area', '밀폐공간작업_출입인원점검')">엑셀</button>
+                <button class="btn btn-danger" onclick="exportToPDF('entry-sheet-area', '밀폐공간작업_출입인원점검')">PDF</button>
                 <button class="btn btn-dark" onclick="window.print()">인쇄</button>
             </div>
         </div>
 
-        <div class="doc-sheet" id="entry-sheet-area">
-            <div class="doc-header">
-                <div style="width: 200px;"></div>
-                <div class="doc-title">밀폐공간작업 출입인원 점검</div>
-                <!-- 최상단 우측 최종 결재란 -->
-                <table class="approval-table">
-                    <tr>
-                        <th rowspan="2">결<br>재</th>
-                        <td>담당</td>
-                        <td>P/L</td>
-                        <td>팀장</td>
-                    </tr>
-                    <tr>
-                        <td style="height:35px;"></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
+        <div class="table-responsive">
+            <div class="doc-sheet" id="entry-sheet-area">
+                <div class="doc-header">
+                    <div style="width: 180px;"></div>
+                    <div class="doc-title">밀폐공간작업 출입인원 점검</div>
+                    <table class="approval-table">
+                        <tr>
+                            <th rowspan="2">결<br>재</th>
+                            <td>담당</td>
+                            <td>P/L</td>
+                            <td>팀장</td>
+                        </tr>
+                        <tr>
+                            <td style="height:30px;"></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <table class="data-table" style="margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="width: 35px;">NO</th>
+                            <th rowspan="2" style="width: 90px;">작업일자</th>
+                            <th rowspan="2" style="width: 80px;">감시인</th>
+                            <th rowspan="2" style="width: 80px;">성명</th>
+                            <th colspan="2">출입시간</th>
+                            <th rowspan="2">비고</th>
+                            <th rowspan="2" class="btn-action-row" style="width: 110px;">관리</th>
+                        </tr>
+                        <tr>
+                            <th style="width: 80px;">들어오는 시간</th>
+                            <th style="width: 80px;">나가는 시간</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entryTableBody"></tbody>
                 </table>
             </div>
-
-            <table class="data-table" style="margin-top: 15px;">
-                <thead>
-                    <tr>
-                        <th rowspan="2" style="width: 35px;">NO</th>
-                        <th rowspan="2" style="width: 90px;">작업일자</th>
-                        <th rowspan="2" style="width: 80px;">감시인</th>
-                        <th rowspan="2" style="width: 80px;">성명</th>
-                        <th colspan="2">출입시간</th>
-                        <th rowspan="2">비고</th>
-                        <th rowspan="2" class="btn-action-row" style="width: 110px;">관리 (결재 / 삭제)</th>
-                    </tr>
-                    <tr>
-                        <th style="width: 80px;">들어오는 시간</th>
-                        <th style="width: 80px;">나가는 시간</th>
-                    </tr>
-                </thead>
-                <tbody id="entryTableBody">
-                    <!-- 스크립트로 데이터 동적 추가 -->
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 
 <script>
-    // 날짜 기본값 설정
     const today = new Date().toISOString().slice(0, 10);
     document.getElementById('g_date').value = today;
     document.getElementById('e_date').value = today;
@@ -441,18 +463,14 @@
     document.getElementById('entrySearchDate').value = today;
     document.getElementById('g_time').value = new Date().toTimeString().slice(0,5);
 
-    // 샘플 데이터
     let gasLogs = [
-        { id: 1, date: '2026-08-26', time: '14:21', location: '소방펌프실', work: '소방펌프 점검', pos: '중부', o2: '18.0', lel: '0', co: '0', co2: '0', h2s: '0', inspector: '김효범', watcher: '홍길동', status: '승인완료' },
-        { id: 2, date: '2026-08-26', time: '15:10', location: 'A구역 맨홀', work: '케이블 점검', pos: '하부', o2: '20.9', lel: '0', co: '5', co2: '0.1', h2s: '0', inspector: '이순신', watcher: '박은구', status: '미결재' }
+        { id: 1, date: '2026-08-26', time: '14:21', location: '소방펌프실', work: '소방펌프 점검', pos: '중부', o2: '18.0', lel: '0', co: '0', co2: '0', h2s: '0', inspector: '김효범', watcher: '홍길동', status: '승인완료' }
     ];
 
     let entryLogs = [
-        { id: 1, date: '2026-08-26', watcher: '홍길동', worker: '김효범', inTime: '10:00', outTime: '11:00', note: '소방펌프 점검', status: '승인완료' },
-        { id: 2, date: '2026-08-26', watcher: '박은구', worker: '강감찬', inTime: '13:00', outTime: '14:30', note: '배관 청소', status: '미결재' }
+        { id: 1, date: '2026-08-26', watcher: '홍길동', worker: '김효범', inTime: '10:00', outTime: '11:00', note: '소방펌프 점검', status: '승인완료' }
     ];
 
-    // 탭 전환 함수
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -463,7 +481,6 @@
         if(tabId === 'entry-view') renderEntryTable();
     }
 
-    // 데이터 등록 함수
     function addGasData() {
         const data = {
             id: Date.now(),
@@ -482,7 +499,7 @@
             status: '미결재'
         };
         gasLogs.push(data);
-        alert('가스 측정 기록이 추가되었습니다.');
+        alert('가스 측정 기록이 저장되었습니다.');
         switchTab('gas-view');
     }
 
@@ -498,15 +515,13 @@
             status: '미결재'
         };
         entryLogs.push(data);
-        alert('출입 기록이 추가되었습니다.');
+        alert('출입 기록이 저장되었습니다.');
         switchTab('entry-view');
     }
 
-    // 가스 측정 데이터 랜더링 (최소 16행 격자 보장 및 삭제 버튼 포함)
     function renderGasTable() {
         const tbody = document.getElementById('gasTableBody');
         tbody.innerHTML = '';
-
         const type = document.getElementById('gasSearchType').value;
         const searchDate = document.getElementById('gasSearchDate').value;
 
@@ -531,9 +546,9 @@
                     <td>${item.watcher}</td>
                     <td class="btn-action-row">
                         ${item.status === '승인완료' 
-                            ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:2px 5px; font-size:10px;" onclick="approveGas(${item.id})">승인</button>`}
-                        <button class="btn btn-danger" style="padding:2px 5px; font-size:10px; margin-left:2px;" onclick="deleteGas(${item.id})">삭제</button>
+                            ? '<span class="status-badge status-approved">승인</span>' 
+                            : `<button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="approveGas(${item.id})">승인</button>`}
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:11px; margin-left:2px;" onclick="deleteGas(${item.id})">삭제</button>
                     </td>
                 `;
             } else {
@@ -543,11 +558,9 @@
         }
     }
 
-    // 출입인원 데이터 랜더링 (최소 20행 격자 보장 및 삭제 버튼 포함)
     function renderEntryTable() {
         const tbody = document.getElementById('entryTableBody');
         tbody.innerHTML = '';
-
         const type = document.getElementById('entrySearchType').value;
         const searchDate = document.getElementById('entrySearchDate').value;
 
@@ -568,9 +581,9 @@
                     <td>${item.note}</td>
                     <td class="btn-action-row">
                         ${item.status === '승인완료' 
-                            ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:2px 5px; font-size:10px;" onclick="approveEntry(${item.id})">승인</button>`}
-                        <button class="btn btn-danger" style="padding:2px 5px; font-size:10px; margin-left:2px;" onclick="deleteEntry(${item.id})">삭제</button>
+                            ? '<span class="status-badge status-approved">승인</span>' 
+                            : `<button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="approveEntry(${item.id})">승인</button>`}
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:11px; margin-left:2px;" onclick="deleteEntry(${item.id})">삭제</button>
                     </td>
                 `;
             } else {
@@ -580,7 +593,6 @@
         }
     }
 
-    // 날짜 필터링 logic
     function filterByDate(itemDate, targetDate, type) {
         if (!targetDate) return true;
         if (type === 'day') return itemDate === targetDate;
@@ -589,61 +601,48 @@
         return true;
     }
 
-    // 승인 기능
     function approveGas(id) {
         const target = gasLogs.find(x => x.id === id);
-        if(target) {
-            target.status = '승인완료';
-            renderGasTable();
-        }
+        if(target) { target.status = '승인완료'; renderGasTable(); }
     }
 
     function approveEntry(id) {
         const target = entryLogs.find(x => x.id === id);
-        if(target) {
-            target.status = '승인완료';
-            renderEntryTable();
-        }
+        if(target) { target.status = '승인완료'; renderEntryTable(); }
     }
 
-    // 삭제 기능 (추가됨)
     function deleteGas(id) {
-        if (confirm("해당 가스 측정 기록을 삭제하시겠습니까?")) {
+        if (confirm("해당 기록을 삭제하시겠습니까?")) {
             gasLogs = gasLogs.filter(x => x.id !== id);
             renderGasTable();
-            alert("기록이 삭제되었습니다.");
         }
     }
 
     function deleteEntry(id) {
-        if (confirm("해당 출입 기록을 삭제하시겠습니까?")) {
+        if (confirm("해당 기록을 삭제하시겠습니까?")) {
             entryLogs = entryLogs.filter(x => x.id !== id);
             renderEntryTable();
-            alert("기록이 삭제되었습니다.");
         }
     }
 
-    // 엑셀 내보내기 (SheetJS 활용)
     function exportToExcel(elementId, fileName) {
         const element = document.getElementById(elementId);
         const wb = XLSX.utils.table_to_book(element, { sheet: "Sheet1" });
         XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
 
-    // PDF 내보내기 (html2pdf 활용)
     function exportToPDF(elementId, fileName) {
         const element = document.getElementById(elementId);
         const opt = {
-            margin:       5,
-            filename:     `${fileName}_${new Date().toISOString().slice(0,10)}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            margin: 5,
+            filename: `${fileName}_${new Date().toISOString().slice(0,10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(element).save();
     }
 
-    // 초기 실행
     renderGasTable();
 </script>
 </body>
