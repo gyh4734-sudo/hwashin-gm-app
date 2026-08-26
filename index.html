@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <!-- 모바일 반응형 핵심 meta 태그 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>밀폐공간 작업 안전관리 시스템</title>
     <!-- 외부 라이브러리 (PDF 및 엑셀) -->
@@ -80,7 +79,7 @@
             display: block;
         }
 
-        /* 컨트롤 박스 (모바일 터치 대응) */
+        /* 컨트롤 박스 */
         .control-panel {
             background: #f8fafc;
             border: 1px solid #cbd5e1;
@@ -110,7 +109,7 @@
         }
 
         .btn {
-            padding: 12px 14px; /* 터치 영역 확대 */
+            padding: 12px 14px;
             font-size: 14px;
             font-weight: bold;
             border: none;
@@ -124,7 +123,7 @@
         .btn-danger { background: #dc2626; color: white; }
         .btn-dark { background: #334155; color: white; }
 
-        /* 모바일 전용 입력 폼 그리드 */
+        /* 입력 폼 그리드 */
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -145,13 +144,13 @@
         }
 
         .form-group input, .form-group select {
-            padding: 10px; /* 모바일 입력창 높이 확대 */
+            padding: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
-            font-size: 15px; /* 모바일 자동 확대 방지 (16px 권장) */
+            font-size: 15px;
         }
 
-        /* 테이블 모바일 스크롤 컨테이너 */
+        /* 테이블 스크롤 컨테이너 */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -160,12 +159,14 @@
             border: 1px solid #000;
         }
 
-        /* 서식 문서 영역 */
+        /* 서식 문서 영역 (정확한 인쇄 및 내보내기용 정격 사이즈) */
         .doc-sheet {
             background: white;
-            padding: 12px;
+            padding: 20px;
             color: #000;
-            min-width: 800px; /* 모바일 스크롤 시 양식 보존 */
+            width: 960px; /* 고정 가로폭으로 PDF 출력 잘림 방지 */
+            box-sizing: border-box;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
         }
 
         .doc-header {
@@ -176,11 +177,11 @@
         }
 
         .doc-title {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             text-align: center;
             flex-grow: 1;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }
 
         .approval-table {
@@ -213,8 +214,8 @@
         }
 
         .info-header {
-            background-color: #334155;
-            color: white;
+            background-color: #e2e8f0;
+            color: #000;
             font-weight: bold;
             text-align: center;
         }
@@ -247,12 +248,19 @@
         }
         .status-approved { background: #dcfce7; color: #15803d; }
 
+        /* 인쇄 및 PDF 시 관리 버튼 제외 */
+        .pdf-exporting .btn-action-row,
+        .pdf-exporting .btn-action-col {
+            display: none !important;
+        }
+
         @media print {
             body { padding: 0; background: white; }
             .main-container { box-shadow: none; padding: 0; max-width: 100%; }
-            .tab-menu, .control-panel, .btn-action-row { display: none !important; }
-            .doc-sheet { border: none; padding: 0; min-width: 100%; }
+            .tab-menu, .control-panel, .btn-action-col, .btn-action-row { display: none !important; }
+            .doc-sheet { border: none; padding: 0; width: 100%; }
             .table-responsive { border: none; overflow: visible; }
+            @page { size: A4 landscape; margin: 10mm; }
         }
     </style>
 </head>
@@ -279,7 +287,6 @@
                 <div class="form-group"><label>측정위치</label><input type="text" id="g_pos" placeholder="예: 상부/중부/하부" required></div>
             </div>
             <div class="form-grid">
-                <!-- inputmode="decimal" 설정으로 모바일 키패드 자동전환 -->
                 <div class="form-group"><label>산소 O₂ (18~23.5%)</label><input type="number" step="0.1" inputmode="decimal" id="g_o2" placeholder="%" required></div>
                 <div class="form-group"><label>가연성가스 LEL (&lt;10%)</label><input type="number" step="0.1" inputmode="decimal" id="g_lel" placeholder="%" required></div>
                 <div class="form-group"><label>일산화탄소 CO (&lt;30ppm)</label><input type="number" step="0.1" inputmode="decimal" id="g_co" placeholder="ppm" required></div>
@@ -323,8 +330,8 @@
                 <button class="btn btn-primary" onclick="renderGasTable()">조회</button>
             </div>
             <div class="action-btns">
-                <button class="btn btn-success" onclick="exportToExcel('gas-sheet-area', '산소및유해가스측정일지')">엑셀</button>
-                <button class="btn btn-danger" onclick="exportToPDF('gas-sheet-area', '산소및유해가스측정일지')">PDF</button>
+                <button class="btn btn-success" onclick="exportToExcel('gas-sheet-area', '산소및유해가스측정일지')">엑셀 내보내기</button>
+                <button class="btn btn-danger" onclick="exportToPDF('gas-sheet-area', '산소및유해가스측정일지')">PDF 저장</button>
                 <button class="btn btn-dark" onclick="window.print()">인쇄</button>
             </div>
         </div>
@@ -342,14 +349,14 @@
                             <td>팀장</td>
                         </tr>
                         <tr>
-                            <td style="height:30px;"></td>
+                            <td style="height:32px;"></td>
                             <td></td>
                             <td></td>
                         </tr>
                     </table>
                 </div>
 
-                <div style="font-size: 10px; margin-bottom: 4px;">
+                <div style="font-size: 11px; margin-bottom: 6px;">
                     <b>적정공기 :</b> 산소 18~23.5% / 이산화탄소 1.5% 미만 / 일산화탄소 30ppm 미만 / 황화수소 10ppm 미만 / 가연성가스 10%LEL 미만
                 </div>
 
@@ -369,22 +376,22 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th rowspan="2" style="width: 30px;">NO</th>
+                            <th rowspan="2" style="width: 35px;">NO</th>
                             <th colspan="2">측정일</th>
-                            <th rowspan="2" style="width: 70px;">측정<br>위치</th>
+                            <th rowspan="2" style="width: 80px;">측정위치</th>
                             <th colspan="5">측정결과</th>
-                            <th rowspan="2" style="width: 60px;">측정자<br>성명</th>
-                            <th rowspan="2" style="width: 60px;">안전감시자<br>서명</th>
-                            <th rowspan="2" class="btn-action-row" style="width: 110px;">관리</th>
+                            <th rowspan="2" style="width: 70px;">측정자</th>
+                            <th rowspan="2" style="width: 70px;">안전감시자</th>
+                            <th rowspan="2" class="btn-action-col" style="width: 100px;">관리</th>
                         </tr>
                         <tr>
-                            <th style="width: 65px;">일자</th>
-                            <th style="width: 45px;">시간</th>
-                            <th style="width: 40px;">산소</th>
-                            <th style="width: 50px;">가연성가스</th>
-                            <th style="width: 55px;">일산화탄소</th>
-                            <th style="width: 55px;">이산화탄소</th>
-                            <th style="width: 50px;">황화수소</th>
+                            <th style="width: 75px;">일자</th>
+                            <th style="width: 50px;">시간</th>
+                            <th style="width: 50px;">산소</th>
+                            <th style="width: 60px;">가연성가스</th>
+                            <th style="width: 60px;">일산화탄소</th>
+                            <th style="width: 60px;">이산화탄소</th>
+                            <th style="width: 60px;">황화수소</th>
                         </tr>
                     </thead>
                     <tbody id="gasTableBody"></tbody>
@@ -406,8 +413,8 @@
                 <button class="btn btn-primary" onclick="renderEntryTable()">조회</button>
             </div>
             <div class="action-btns">
-                <button class="btn btn-success" onclick="exportToExcel('entry-sheet-area', '밀폐공간작업_출입인원점검')">엑셀</button>
-                <button class="btn btn-danger" onclick="exportToPDF('entry-sheet-area', '밀폐공간작업_출입인원점검')">PDF</button>
+                <button class="btn btn-success" onclick="exportToExcel('entry-sheet-area', '밀폐공간작업_출입인원점검')">엑셀 내보내기</button>
+                <button class="btn btn-danger" onclick="exportToPDF('entry-sheet-area', '밀폐공간작업_출입인원점검')">PDF 저장</button>
                 <button class="btn btn-dark" onclick="window.print()">인쇄</button>
             </div>
         </div>
@@ -425,7 +432,7 @@
                             <td>팀장</td>
                         </tr>
                         <tr>
-                            <td style="height:30px;"></td>
+                            <td style="height:32px;"></td>
                             <td></td>
                             <td></td>
                         </tr>
@@ -435,17 +442,17 @@
                 <table class="data-table" style="margin-top: 10px;">
                     <thead>
                         <tr>
-                            <th rowspan="2" style="width: 35px;">NO</th>
-                            <th rowspan="2" style="width: 90px;">작업일자</th>
-                            <th rowspan="2" style="width: 80px;">감시인</th>
-                            <th rowspan="2" style="width: 80px;">성명</th>
+                            <th rowspan="2" style="width: 40px;">NO</th>
+                            <th rowspan="2" style="width: 100px;">작업일자</th>
+                            <th rowspan="2" style="width: 90px;">감시인</th>
+                            <th rowspan="2" style="width: 90px;">작업자 성명</th>
                             <th colspan="2">출입시간</th>
-                            <th rowspan="2">비고</th>
-                            <th rowspan="2" class="btn-action-row" style="width: 110px;">관리</th>
+                            <th rowspan="2">비고 / 작업내용</th>
+                            <th rowspan="2" class="btn-action-col" style="width: 100px;">관리</th>
                         </tr>
                         <tr>
-                            <th style="width: 80px;">들어오는 시간</th>
-                            <th style="width: 80px;">나가는 시간</th>
+                            <th style="width: 90px;">들어오는 시간</th>
+                            <th style="width: 90px;">나가는 시간</th>
                         </tr>
                     </thead>
                     <tbody id="entryTableBody"></tbody>
@@ -547,8 +554,8 @@
                     <td class="btn-action-row">
                         ${item.status === '승인완료' 
                             ? '<span class="status-badge status-approved">승인</span>' 
-                            : `<button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="approveGas(${item.id})">승인</button>`}
-                        <button class="btn btn-danger" style="padding:4px 8px; font-size:11px; margin-left:2px;" onclick="deleteGas(${item.id})">삭제</button>
+                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveGas(${item.id})">승인</button>`}
+                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteGas(${item.id})">삭제</button>
                     </td>
                 `;
             } else {
@@ -582,8 +589,8 @@
                     <td class="btn-action-row">
                         ${item.status === '승인완료' 
                             ? '<span class="status-badge status-approved">승인</span>' 
-                            : `<button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="approveEntry(${item.id})">승인</button>`}
-                        <button class="btn btn-danger" style="padding:4px 8px; font-size:11px; margin-left:2px;" onclick="deleteEntry(${item.id})">삭제</button>
+                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveEntry(${item.id})">승인</button>`}
+                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteEntry(${item.id})">삭제</button>
                     </td>
                 `;
             } else {
@@ -625,22 +632,40 @@
         }
     }
 
+    // [개선] 엑셀 양식 및 서식 전체 내보내기
     function exportToExcel(elementId, fileName) {
-        const element = document.getElementById(elementId);
-        const wb = XLSX.utils.table_to_book(element, { sheet: "Sheet1" });
+        const element = document.getElementById(elementId).cloneNode(true);
+        // 버튼 컬럼 및 승인/삭제 버튼 요소 제거
+        element.querySelectorAll('.btn-action-col, .btn-action-row').forEach(el => el.remove());
+        
+        const wb = XLSX.utils.table_to_book(element, { sheet: "안전일지", raw: true });
         XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
 
+    // [개선] PDF 화면 잘림 완전 방지 (A4 가로 세팅 및 모바일 뷰포트 고정)
     function exportToPDF(elementId, fileName) {
         const element = document.getElementById(elementId);
+        
+        // 내보내기 전 버튼 영역 숨김 클래스 추가
+        element.classList.add('pdf-exporting');
+
         const opt = {
-            margin: 5,
-            filename: `${fileName}_${new Date().toISOString().slice(0,10)}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            margin:       [8, 8, 8, 8],
+            filename:     `${fileName}_${new Date().toISOString().slice(0,10)}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                scrollX: 0, 
+                scrollY: 0,
+                windowWidth: 1024 // 가로폭 고정하여 모바일 잘림 문제 방지
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' } // 가로형 출력
         };
-        html2pdf().set(opt).from(element).save();
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            element.classList.remove('pdf-exporting');
+        });
     }
 
     renderGasTable();
