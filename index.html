@@ -131,7 +131,7 @@
             font-size: 14px;
         }
 
-        /* 서식 문서 출력용 스타일 (이미지 양식 재현) */
+        /* 서식 문서 출력용 스타일 */
         .doc-sheet {
             background: white;
             padding: 20px;
@@ -222,10 +222,11 @@
         .status-pending { background: #fef3c7; color: #d97706; }
         .status-approved { background: #dcfce7; color: #15803d; }
 
+        /* 인쇄 및 PDF 인쇄 시 제외될 관리 버튼 컬럼 */
         @media print {
             body { padding: 0; background: white; }
             .main-container { box-shadow: none; padding: 0; max-width: 100%; }
-            .tab-menu, .control-panel, .btn-approve-row { display: none !important; }
+            .tab-menu, .control-panel, .btn-action-row { display: none !important; }
             .doc-sheet { border: none; padding: 0; }
         }
     </style>
@@ -349,7 +350,7 @@
                         <th colspan="5">측정결과</th>
                         <th rowspan="2" style="width: 60px;">측정자<br>성명</th>
                         <th rowspan="2" style="width: 60px;">안전감시자<br>서명</th>
-                        <th rowspan="2" class="btn-approve-row" style="width: 75px;">개별승인<br>결재</th>
+                        <th rowspan="2" class="btn-action-row" style="width: 110px;">관리 (결재 / 삭제)</th>
                     </tr>
                     <tr>
                         <th style="width: 65px;">일자</th>
@@ -362,7 +363,7 @@
                     </tr>
                 </thead>
                 <tbody id="gasTableBody">
-                    <!-- 스크립트로 내용이 들어갑니다 (기본 16행 세팅) -->
+                    <!-- 스크립트로 내용이 들어갑니다 -->
                 </tbody>
             </table>
         </div>
@@ -416,7 +417,7 @@
                         <th rowspan="2" style="width: 80px;">성명</th>
                         <th colspan="2">출입시간</th>
                         <th rowspan="2">비고</th>
-                        <th rowspan="2" class="btn-approve-row" style="width: 80px;">개별승인<br>결재</th>
+                        <th rowspan="2" class="btn-action-row" style="width: 110px;">관리 (결재 / 삭제)</th>
                     </tr>
                     <tr>
                         <th style="width: 80px;">들어오는 시간</th>
@@ -424,7 +425,7 @@
                     </tr>
                 </thead>
                 <tbody id="entryTableBody">
-                    <!-- 스크립트로 데이터 동적 추가 (기본 20행) -->
+                    <!-- 스크립트로 데이터 동적 추가 -->
                 </tbody>
             </table>
         </div>
@@ -440,7 +441,7 @@
     document.getElementById('entrySearchDate').value = today;
     document.getElementById('g_time').value = new Date().toTimeString().slice(0,5);
 
-    // 샘플 데이터 및 데이터베이스 변수
+    // 샘플 데이터
     let gasLogs = [
         { id: 1, date: '2026-08-26', time: '14:21', location: '소방펌프실', work: '소방펌프 점검', pos: '중부', o2: '18.0', lel: '0', co: '0', co2: '0', h2s: '0', inspector: '김효범', watcher: '홍길동', status: '승인완료' },
         { id: 2, date: '2026-08-26', time: '15:10', location: 'A구역 맨홀', work: '케이블 점검', pos: '하부', o2: '20.9', lel: '0', co: '5', co2: '0.1', h2s: '0', inspector: '이순신', watcher: '박은구', status: '미결재' }
@@ -501,7 +502,7 @@
         switchTab('entry-view');
     }
 
-    // 가스 측정 데이터 랜더링 (최소 16행 격자 보장)
+    // 가스 측정 데이터 랜더링 (최소 16행 격자 보장 및 삭제 버튼 포함)
     function renderGasTable() {
         const tbody = document.getElementById('gasTableBody');
         tbody.innerHTML = '';
@@ -528,21 +529,21 @@
                     <td>${item.h2s}</td>
                     <td>${item.inspector}</td>
                     <td>${item.watcher}</td>
-                    <td class="btn-approve-row">
+                    <td class="btn-action-row">
                         ${item.status === '승인완료' 
                             ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:2px 6px; font-size:10px;" onclick="approveGas(${item.id})">승인</button>`}
+                            : `<button class="btn btn-primary" style="padding:2px 5px; font-size:10px;" onclick="approveGas(${item.id})">승인</button>`}
+                        <button class="btn btn-danger" style="padding:2px 5px; font-size:10px; margin-left:2px;" onclick="deleteGas(${item.id})">삭제</button>
                     </td>
                 `;
             } else {
-                // 빈 데이터 행 출력 (이미지 서식과 유사하게 유지)
-                tr.innerHTML = `<td>${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="btn-approve-row"></td>`;
+                tr.innerHTML = `<td>${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="btn-action-row"></td>`;
             }
             tbody.appendChild(tr);
         }
     }
 
-    // 출입인원 데이터 랜더링 (최소 20행 격자 보장)
+    // 출입인원 데이터 랜더링 (최소 20행 격자 보장 및 삭제 버튼 포함)
     function renderEntryTable() {
         const tbody = document.getElementById('entryTableBody');
         tbody.innerHTML = '';
@@ -565,20 +566,21 @@
                     <td>${item.inTime}</td>
                     <td>${item.outTime}</td>
                     <td>${item.note}</td>
-                    <td class="btn-approve-row">
+                    <td class="btn-action-row">
                         ${item.status === '승인완료' 
                             ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:2px 6px; font-size:10px;" onclick="approveEntry(${item.id})">승인</button>`}
+                            : `<button class="btn btn-primary" style="padding:2px 5px; font-size:10px;" onclick="approveEntry(${item.id})">승인</button>`}
+                        <button class="btn btn-danger" style="padding:2px 5px; font-size:10px; margin-left:2px;" onclick="deleteEntry(${item.id})">삭제</button>
                     </td>
                 `;
             } else {
-                tr.innerHTML = `<td>${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="btn-approve-row"></td>`;
+                tr.innerHTML = `<td>${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="btn-action-row"></td>`;
             }
             tbody.appendChild(tr);
         }
     }
 
-    // 일/월/연 단위 날짜 필터링 logic
+    // 날짜 필터링 logic
     function filterByDate(itemDate, targetDate, type) {
         if (!targetDate) return true;
         if (type === 'day') return itemDate === targetDate;
@@ -587,7 +589,7 @@
         return true;
     }
 
-    // 우측 행별 개별 승인 결재 기능
+    // 승인 기능
     function approveGas(id) {
         const target = gasLogs.find(x => x.id === id);
         if(target) {
@@ -601,6 +603,23 @@
         if(target) {
             target.status = '승인완료';
             renderEntryTable();
+        }
+    }
+
+    // 삭제 기능 (추가됨)
+    function deleteGas(id) {
+        if (confirm("해당 가스 측정 기록을 삭제하시겠습니까?")) {
+            gasLogs = gasLogs.filter(x => x.id !== id);
+            renderGasTable();
+            alert("기록이 삭제되었습니다.");
+        }
+    }
+
+    function deleteEntry(id) {
+        if (confirm("해당 출입 기록을 삭제하시겠습니까?")) {
+            entryLogs = entryLogs.filter(x => x.id !== id);
+            renderEntryTable();
+            alert("기록이 삭제되었습니다.");
         }
     }
 
@@ -624,7 +643,7 @@
         html2pdf().set(opt).from(element).save();
     }
 
-    // 최초 로딩 시 가스 테이블 렌더링
+    // 초기 실행
     renderGasTable();
 </script>
 </body>
