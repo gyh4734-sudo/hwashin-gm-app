@@ -433,6 +433,8 @@
                     </select>
                     <input type="date" id="gasSearchDate" onchange="renderGasTable()">
                     <button class="btn btn-primary" onclick="renderGasTable()">조회</button>
+                    <!-- 정렬 옵션 버튼 추가 -->
+                    <button id="gasSortBtn" class="btn btn-dark" onclick="toggleSortOrder('gas')" style="background:#0284c7;">▲ 시간 오름차순 (과거순)</button>
                     <button class="btn btn-dark" onclick="window.print()" style="margin-left:auto;">인쇄하기</button>
                 </div>
                 <div class="approval-group" style="border-top:1px dashed #cbd5e1; padding-top:8px;">
@@ -523,6 +525,8 @@
                     </select>
                     <input type="date" id="entrySearchDate" onchange="renderEntryTable()">
                     <button class="btn btn-primary" onclick="renderEntryTable()">조회</button>
+                    <!-- 정렬 옵션 버튼 추가 -->
+                    <button id="entrySortBtn" class="btn btn-dark" onclick="toggleSortOrder('entry')" style="background:#0284c7;">▲ 시간 오름차순 (과거순)</button>
                     <button class="btn btn-dark" onclick="window.print()" style="margin-left:auto;">인쇄하기</button>
                 </div>
                 <div class="approval-group" style="border-top:1px dashed #cbd5e1; padding-top:8px;">
@@ -596,6 +600,7 @@
         messagingSenderId: "89487587050",
         appId: "1:89487587050:web:5e52e26547789ba9b3c993",
         measurementId: "G-FZZ0JC3KDN"
+
     };
 
     // Firebase 초기화
@@ -627,7 +632,11 @@
     let gasLogs = [];
     let entryLogs = [];
 
-    // 실시간 리스너 연결 (Firestore -> 화면 자동 반영)
+    // 정렬 상태 변수 (asc: 오름차순/과거순, desc: 내림차순/최신순)
+    let gasSortOrder = 'asc'; 
+    let entrySortOrder = 'asc';
+
+    // 실시간 리스너 연결
     function initRealtimeListeners() {
         const qGas = query(collection(db, "gasLogs"), orderBy("createdAt", "desc"));
         onSnapshot(qGas, (snapshot) => {
@@ -698,6 +707,29 @@
         if(tabId === 'entry-view') renderEntryTable();
     };
 
+    // 정렬 순서 토글 함수
+    window.toggleSortOrder = function(type) {
+        if (type === 'gas') {
+            gasSortOrder = (gasSortOrder === 'asc') ? 'desc' : 'asc';
+            const btn = document.getElementById('gasSortBtn');
+            if (gasSortOrder === 'asc') {
+                btn.innerText = '▲ 시간 오름차순 (과거순)';
+            } else {
+                btn.innerText = '▼ 시간 내림차순 (최신순)';
+            }
+            renderGasTable();
+        } else if (type === 'entry') {
+            entrySortOrder = (entrySortOrder === 'asc') ? 'desc' : 'asc';
+            const btn = document.getElementById('entrySortBtn');
+            if (entrySortOrder === 'asc') {
+                btn.innerText = '▲ 시간 오름차순 (과거순)';
+            } else {
+                btn.innerText = '▼ 시간 내림차순 (최신순)';
+            }
+            renderEntryTable();
+        }
+    };
+
     window.addGasData = async function() {
         const data = {
             date: document.getElementById('g_date').value,
@@ -763,8 +795,20 @@
         const type = document.getElementById('gasSearchType').value;
         const searchDate = document.getElementById('gasSearchDate').value;
 
-        const filtered = gasLogs.filter(item => {
+        // 1. 장소 및 일자 조건 필터링
+        let filtered = gasLogs.filter(item => {
             return item.location === selectedLocation && filterByDate(item.date, searchDate, type);
+        });
+
+        // 2. 측정일자 + 측정시간 기준 정렬
+        filtered.sort((a, b) => {
+            const dateTimeA = `${a.date} ${a.time}`;
+            const dateTimeB = `${b.date} ${b.time}`;
+            if (gasSortOrder === 'asc') {
+                return dateTimeA.localeCompare(dateTimeB); // 오름차순 (과거 -> 최신)
+            } else {
+                return dateTimeB.localeCompare(dateTimeA); // 내림차순 (최신 -> 과거)
+            }
         });
 
         for (let i = 0; i < Math.max(16, filtered.length); i++) {
@@ -804,8 +848,20 @@
         const type = document.getElementById('entrySearchType').value;
         const searchDate = document.getElementById('entrySearchDate').value;
 
-        const filtered = entryLogs.filter(item => {
+        // 1. 장소 및 일자 조건 필터링
+        let filtered = entryLogs.filter(item => {
             return item.location === selectedLocation && filterByDate(item.date, searchDate, type);
+        });
+
+        // 2. 작업일자 + 입실시간(inTime) 기준 정렬
+        filtered.sort((a, b) => {
+            const dateTimeA = `${a.date} ${a.inTime}`;
+            const dateTimeB = `${b.date} ${b.inTime}`;
+            if (entrySortOrder === 'asc') {
+                return dateTimeA.localeCompare(dateTimeB); // 오름차순 (과거 -> 최신)
+            } else {
+                return dateTimeB.localeCompare(dateTimeA); // 내림차순 (최신 -> 과거)
+            }
         });
 
         for (let i = 0; i < Math.max(20, filtered.length); i++) {
@@ -856,7 +912,7 @@
 
     window.approveEntry = async function(id) {
         if (!checkAdminAuth()) return;
-        await updateDoc(doc(db, "entryLogs", id), { status: '승인완료' });
+        await updateDoc(doc(doc(db, "entryLogs", id), { status: '승인완료' });
     };
 
     window.deleteGas = async function(id) {
