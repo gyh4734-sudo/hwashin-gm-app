@@ -426,12 +426,12 @@
         <div id="gas-view" class="tab-content">
             <div class="control-panel">
                 <div class="search-group">
-                    <select id="gasSearchType">
+                    <select id="gasSearchType" onchange="renderGasTable()">
                         <option value="day">일단위</option>
                         <option value="month">월단위</option>
                         <option value="year">연단위</option>
                     </select>
-                    <input type="date" id="gasSearchDate">
+                    <input type="date" id="gasSearchDate" onchange="renderGasTable()">
                     <button class="btn btn-primary" onclick="renderGasTable()">조회</button>
                     <button class="btn btn-dark" onclick="window.print()" style="margin-left:auto;">인쇄하기</button>
                 </div>
@@ -516,12 +516,12 @@
         <div id="entry-view" class="tab-content">
             <div class="control-panel">
                 <div class="search-group">
-                    <select id="entrySearchType">
+                    <select id="entrySearchType" onchange="renderEntryTable()">
                         <option value="day">일단위</option>
                         <option value="month">월단위</option>
                         <option value="year">연단위</option>
                     </select>
-                    <input type="date" id="entrySearchDate">
+                    <input type="date" id="entrySearchDate" onchange="renderEntryTable()">
                     <button class="btn btn-primary" onclick="renderEntryTable()">조회</button>
                     <button class="btn btn-dark" onclick="window.print()" style="margin-left:auto;">인쇄하기</button>
                 </div>
@@ -582,8 +582,26 @@
     </div>
 </div>
 
-<script>
-    // 공정별 접근 비밀번호 설정 (원하시는 번호로 수정 가능합니다)
+<!-- Firebase SDK 9.x 모듈 불러오기 -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    // ⚠️ Firebase 콘솔에서 발급받은 본인의 프로젝트 설정 값으로 교체하세요!
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 공정별 접속 비밀번호
     const LOCATION_PASSWORDS = {
         '지하수조': '1111',
         '폐수처리장': '2222',
@@ -592,7 +610,6 @@
         '펌프실': '5555'
     };
 
-    // 관리자(승인 및 삭제) 비밀번호
     const ADMIN_PASSWORD = "1234";
 
     const getCurrentTimeStr = () => new Date().toTimeString().slice(0,5);
@@ -606,14 +623,25 @@
     document.getElementById('e_in').value = getCurrentTimeStr();
 
     let selectedLocation = '';
+    let gasLogs = [];
+    let entryLogs = [];
 
-    let gasLogs = [
-        { id: 1, date: '2026-08-26', time: '14:21', location: '펌프실', work: '소방펌프 점검', pos: '중부', o2: '18.0', lel: '0', co: '0', co2: '0', h2s: '0', inspector: '김효범', watcher: '홍길동', status: '승인완료' }
-    ];
+    // 실시간 리스너 연결 (Firestore -> 화면 자동 반영)
+    function initRealtimeListeners() {
+        const qGas = query(collection(db, "gasLogs"), orderBy("createdAt", "desc"));
+        onSnapshot(qGas, (snapshot) => {
+            gasLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderGasTable();
+        });
 
-    let entryLogs = [
-        { id: 1, date: '2026-08-26', location: '펌프실', watcher: '홍길동', worker: '김효범', inTime: '10:00', outTime: '11:00', note: '소방펌프 점검', status: '승인완료' }
-    ];
+        const qEntry = query(collection(db, "entryLogs"), orderBy("createdAt", "desc"));
+        onSnapshot(qEntry, (snapshot) => {
+            entryLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderEntryTable();
+        });
+    }
+
+    initRealtimeListeners();
 
     function checkAdminAuth() {
         const inputPw = prompt("관리자 비밀번호를 입력해주세요.");
@@ -626,11 +654,11 @@
         }
     }
 
-    function selectLocation(locationName) {
+    window.selectLocation = function(locationName) {
         const correctPassword = LOCATION_PASSWORDS[locationName];
         const inputPw = prompt(`[${locationName}] 접속 비밀번호를 입력해주세요.`);
         
-        if (inputPw === null) return; // 취소한 경우
+        if (inputPw === null) return;
         
         if (inputPw === correctPassword) {
             selectedLocation = locationName;
@@ -646,15 +674,15 @@
         } else {
             alert("비밀번호가 일치하지 않습니다. 접속할 수 없습니다.");
         }
-    }
+    };
 
-    function backToLocationSelect() {
+    window.backToLocationSelect = function() {
         document.getElementById('workspace-screen').style.display = 'none';
         document.getElementById('location-select-screen').style.display = 'block';
         selectedLocation = '';
-    }
+    };
 
-    function switchTab(tabId) {
+    window.switchTab = function(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
@@ -667,11 +695,10 @@
         }
         if(tabId === 'gas-view') renderGasTable();
         if(tabId === 'entry-view') renderEntryTable();
-    }
+    };
 
-    function addGasData() {
+    window.addGasData = async function() {
         const data = {
-            id: Date.now(),
             date: document.getElementById('g_date').value,
             time: document.getElementById('g_time').value,
             location: selectedLocation,
@@ -684,16 +711,21 @@
             h2s: document.getElementById('g_h2s').value,
             inspector: document.getElementById('g_inspector').value,
             watcher: document.getElementById('g_watcher').value,
-            status: '미결재'
+            status: '미결재',
+            createdAt: Date.now()
         };
-        gasLogs.push(data);
-        alert(`[${selectedLocation}] 가스 측정 기록이 저장되었습니다.`);
-        switchTab('gas-view');
-    }
 
-    function addEntryData() {
+        try {
+            await addDoc(collection(db, "gasLogs"), data);
+            alert(`[${selectedLocation}] 가스 측정 기록이 실시간으로 저장되었습니다.`);
+            switchTab('gas-view');
+        } catch (e) {
+            alert("저장 실패: " + e.message);
+        }
+    };
+
+    window.addEntryData = async function() {
         const data = {
-            id: Date.now(),
             date: document.getElementById('e_date').value,
             location: selectedLocation,
             watcher: document.getElementById('e_watcher').value,
@@ -701,23 +733,30 @@
             inTime: document.getElementById('e_in').value,
             outTime: '',
             note: document.getElementById('e_note').value,
-            status: '미결재'
+            status: '미결재',
+            createdAt: Date.now()
         };
-        entryLogs.push(data);
-        alert(`[${selectedLocation}] ${data.worker} 님의 입실 기록이 완료되었습니다.`);
-        switchTab('entry-view');
-    }
 
-    function recordExitTime(id) {
-        const target = entryLogs.find(x => x.id === id);
-        if(target) {
-            target.outTime = getCurrentTimeStr();
-            alert(`${target.worker} 님의 퇴실시간(${target.outTime})이 기록되었습니다.`);
-            renderEntryTable();
+        try {
+            await addDoc(collection(db, "entryLogs"), data);
+            alert(`[${selectedLocation}] ${data.worker} 님의 입실 기록이 실시간으로 등록되었습니다.`);
+            switchTab('entry-view');
+        } catch (e) {
+            alert("저장 실패: " + e.message);
         }
-    }
+    };
 
-    function renderGasTable() {
+    window.recordExitTime = async function(id) {
+        const outTime = getCurrentTimeStr();
+        try {
+            await updateDoc(doc(db, "entryLogs", id), { outTime });
+            alert(`퇴실시간(${outTime})이 기록되었습니다.`);
+        } catch (e) {
+            alert("수정 실패: " + e.message);
+        }
+    };
+
+    window.renderGasTable = function() {
         const tbody = document.getElementById('gasTableBody');
         tbody.innerHTML = '';
         const type = document.getElementById('gasSearchType').value;
@@ -747,8 +786,8 @@
                     <td class="btn-action-row">
                         ${item.status === '승인완료' 
                             ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveGas(${item.id})">승인</button>`}
-                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteGas(${item.id})">삭제</button>
+                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveGas('${item.id}')">승인</button>`}
+                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteGas('${item.id}')">삭제</button>
                     </td>
                 `;
             } else {
@@ -756,9 +795,9 @@
             }
             tbody.appendChild(tr);
         }
-    }
+    };
 
-    function renderEntryTable() {
+    window.renderEntryTable = function() {
         const tbody = document.getElementById('entryTableBody');
         tbody.innerHTML = '';
         const type = document.getElementById('entrySearchType').value;
@@ -786,12 +825,12 @@
                     <td>${item.note}</td>
                     <td class="btn-action-row">
                         ${isWorking 
-                            ? `<button class="btn btn-warning" style="padding:3px 6px; font-size:10px;" onclick="recordExitTime(${item.id})">퇴실</button>` 
+                            ? `<button class="btn btn-warning" style="padding:3px 6px; font-size:10px;" onclick="recordExitTime('${item.id}')">퇴실</button>` 
                             : ''}
                         ${item.status === '승인완료' 
                             ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveEntry(${item.id})">승인</button>`}
-                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteEntry(${item.id})">삭제</button>
+                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveEntry('${item.id}')">승인</button>`}
+                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteEntry('${item.id}')">삭제</button>
                     </td>
                 `;
             } else {
@@ -799,7 +838,7 @@
             }
             tbody.appendChild(tr);
         }
-    }
+    };
 
     function filterByDate(itemDate, targetDate, type) {
         if (!targetDate) return true;
@@ -809,35 +848,31 @@
         return true;
     }
 
-    function approveGas(id) {
+    window.approveGas = async function(id) {
         if (!checkAdminAuth()) return;
-        const target = gasLogs.find(x => x.id === id);
-        if(target) { target.status = '승인완료'; renderGasTable(); }
-    }
+        await updateDoc(doc(db, "gasLogs", id), { status: '승인완료' });
+    };
 
-    function approveEntry(id) {
+    window.approveEntry = async function(id) {
         if (!checkAdminAuth()) return;
-        const target = entryLogs.find(x => x.id === id);
-        if(target) { target.status = '승인완료'; renderEntryTable(); }
-    }
+        await updateDoc(doc(db, "entryLogs", id), { status: '승인완료' });
+    };
 
-    function deleteGas(id) {
+    window.deleteGas = async function(id) {
         if (!checkAdminAuth()) return;
         if (confirm("해당 기록을 삭제하시겠습니까?")) {
-            gasLogs = gasLogs.filter(x => x.id !== id);
-            renderGasTable();
+            await deleteDoc(doc(db, "gasLogs", id));
         }
-    }
+    };
 
-    function deleteEntry(id) {
+    window.deleteEntry = async function(id) {
         if (!checkAdminAuth()) return;
         if (confirm("해당 기록을 삭제하시겠습니까?")) {
-            entryLogs = entryLogs.filter(x => x.id !== id);
-            renderEntryTable();
+            await deleteDoc(doc(db, "entryLogs", id));
         }
-    }
+    };
 
-    function approveHeader(docType) {
+    window.approveHeader = function(docType) {
         if (!checkAdminAuth()) return;
         const role = document.getElementById(`${docType}ApproveRole`).value;
         const fileInput = document.getElementById(`${docType}SignFile`);
@@ -852,15 +887,15 @@
         } else {
             targetTd.innerHTML = '<span style="color:#15803d; font-weight:bold; font-size:10px;">승인</span>';
         }
-    }
+    };
 
-    function resetHeaderApproval(docType) {
+    window.resetHeaderApproval = function(docType) {
         if (!checkAdminAuth()) return;
         document.getElementById(`${docType}-stamp-manager`).innerHTML = '';
         document.getElementById(`${docType}-stamp-pl`).innerHTML = '';
         document.getElementById(`${docType}-stamp-leader`).innerHTML = '';
         document.getElementById(`${docType}SignFile`).value = '';
-    }
+    };
 </script>
 </body>
 </html>
