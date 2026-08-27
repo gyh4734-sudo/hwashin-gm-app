@@ -326,7 +326,7 @@
             .location-select-screen, .workspace-header, .tab-menu, .control-panel { display: none !important; }
             .doc-sheet { border: none; padding: 0; width: 100%; min-width: 100%; }
             .table-responsive { border: none; overflow: visible; display: block; }
-            .btn-action-row button { display: none !important; }
+            .btn-action-col { display: none !important; }
             @page { size: A4 landscape; margin: 10mm; }
         }
     </style>
@@ -433,7 +433,6 @@
                     </select>
                     <input type="date" id="gasSearchDate" onchange="renderGasTable()">
                     <button class="btn btn-primary" onclick="renderGasTable()">조회</button>
-                    <!-- 정렬 옵션 버튼 추가 -->
                     <button id="gasSortBtn" class="btn btn-dark" onclick="toggleSortOrder('gas')" style="background:#0284c7;">▲ 시간 오름차순 (과거순)</button>
                     <button class="btn btn-dark" onclick="window.print()" style="margin-left:auto;">인쇄하기</button>
                 </div>
@@ -525,7 +524,6 @@
                     </select>
                     <input type="date" id="entrySearchDate" onchange="renderEntryTable()">
                     <button class="btn btn-primary" onclick="renderEntryTable()">조회</button>
-                    <!-- 정렬 옵션 버튼 추가 -->
                     <button id="entrySortBtn" class="btn btn-dark" onclick="toggleSortOrder('entry')" style="background:#0284c7;">▲ 시간 오름차순 (과거순)</button>
                     <button class="btn btn-dark" onclick="window.print()" style="margin-left:auto;">인쇄하기</button>
                 </div>
@@ -591,7 +589,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-    // ⚠️ Firebase 콘솔에서 발급받은 본인의 프로젝트 설정 값으로 교체하세요!
     const firebaseConfig = {
         apiKey: "AIzaSyBZ2D3cR2oaW3R-7MY-Iwg7kLuXXvIoaTE",
         authDomain: "hwashin-gm.firebaseapp.com",
@@ -600,14 +597,11 @@
         messagingSenderId: "89487587050",
         appId: "1:89487587050:web:5e52e26547789ba9b3c993",
         measurementId: "G-FZZ0JC3KDN"
-
     };
 
-    // Firebase 초기화
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 공정별 접속 비밀번호
     const LOCATION_PASSWORDS = {
         '지하수조': '1111',
         '폐수처리장': '2222',
@@ -632,11 +626,9 @@
     let gasLogs = [];
     let entryLogs = [];
 
-    // 정렬 상태 변수 (asc: 오름차순/과거순, desc: 내림차순/최신순)
     let gasSortOrder = 'asc'; 
     let entrySortOrder = 'asc';
 
-    // 실시간 리스너 연결
     function initRealtimeListeners() {
         const qGas = query(collection(db, "gasLogs"), orderBy("createdAt", "desc"));
         onSnapshot(qGas, (snapshot) => {
@@ -662,6 +654,14 @@
             alert("비밀번호가 일치하지 않습니다.");
             return false;
         }
+    }
+
+    function filterByDate(itemDate, searchDate, type) {
+        if (!itemDate || !searchDate) return true;
+        if (type === 'day') return itemDate === searchDate;
+        if (type === 'month') return itemDate.slice(0, 7) === searchDate.slice(0, 7);
+        if (type === 'year') return itemDate.slice(0, 4) === searchDate.slice(0, 4);
+        return true;
     }
 
     window.selectLocation = function(locationName) {
@@ -697,7 +697,10 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         
-        const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+        const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => {
+            const attr = btn.getAttribute('onclick');
+            return attr && attr.includes(tabId);
+        });
         if(activeBtn) activeBtn.classList.add('active');
 
         if(tabId === 'entry-input') {
@@ -707,25 +710,16 @@
         if(tabId === 'entry-view') renderEntryTable();
     };
 
-    // 정렬 순서 토글 함수
     window.toggleSortOrder = function(type) {
         if (type === 'gas') {
             gasSortOrder = (gasSortOrder === 'asc') ? 'desc' : 'asc';
             const btn = document.getElementById('gasSortBtn');
-            if (gasSortOrder === 'asc') {
-                btn.innerText = '▲ 시간 오름차순 (과거순)';
-            } else {
-                btn.innerText = '▼ 시간 내림차순 (최신순)';
-            }
+            btn.innerText = (gasSortOrder === 'asc') ? '▲ 시간 오름차순 (과거순)' : '▼ 시간 내림차순 (최신순)';
             renderGasTable();
         } else if (type === 'entry') {
             entrySortOrder = (entrySortOrder === 'asc') ? 'desc' : 'asc';
             const btn = document.getElementById('entrySortBtn');
-            if (entrySortOrder === 'asc') {
-                btn.innerText = '▲ 시간 오름차순 (과거순)';
-            } else {
-                btn.innerText = '▼ 시간 내림차순 (최신순)';
-            }
+            btn.innerText = (entrySortOrder === 'asc') ? '▲ 시간 오름차순 (과거순)' : '▼ 시간 내림차순 (최신순)';
             renderEntryTable();
         }
     };
@@ -789,54 +783,75 @@
         }
     };
 
+    window.deleteGasData = async function(id) {
+        if (!checkAdminAuth()) return;
+        if (confirm("해당 가스 측정 데이터를 삭제하시겠습니까?")) {
+            try {
+                await deleteDoc(doc(db, "gasLogs", id));
+                alert("삭제되었습니다.");
+            } catch (e) {
+                alert("삭제 실패: " + e.message);
+            }
+        }
+    };
+
+    window.deleteEntryData = async function(id) {
+        if (!checkAdminAuth()) return;
+        if (confirm("해당 출입 기록 데이터를 삭제하시겠습니까?")) {
+            try {
+                await deleteDoc(doc(db, "entryLogs", id));
+                alert("삭제되었습니다.");
+            } catch (e) {
+                alert("삭제 실패: " + e.message);
+            }
+        }
+    };
+
     window.renderGasTable = function() {
         const tbody = document.getElementById('gasTableBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
         const type = document.getElementById('gasSearchType').value;
         const searchDate = document.getElementById('gasSearchDate').value;
 
-        // 1. 장소 및 일자 조건 필터링
         let filtered = gasLogs.filter(item => {
             return item.location === selectedLocation && filterByDate(item.date, searchDate, type);
         });
 
-        // 2. 측정일자 + 측정시간 기준 정렬
         filtered.sort((a, b) => {
             const dateTimeA = `${a.date} ${a.time}`;
             const dateTimeB = `${b.date} ${b.time}`;
-            if (gasSortOrder === 'asc') {
-                return dateTimeA.localeCompare(dateTimeB); // 오름차순 (과거 -> 최신)
-            } else {
-                return dateTimeB.localeCompare(dateTimeA); // 내림차순 (최신 -> 과거)
-            }
+            return gasSortOrder === 'asc' ? dateTimeA.localeCompare(dateTimeB) : dateTimeB.localeCompare(dateTimeA);
         });
 
-        for (let i = 0; i < Math.max(16, filtered.length); i++) {
+        const rowCount = Math.max(16, filtered.length);
+
+        for (let i = 0; i < rowCount; i++) {
             const item = filtered[i];
             const tr = document.createElement('tr');
-
             if (item) {
                 tr.innerHTML = `
                     <td>${i + 1}</td>
-                    <td>${item.date}</td>
-                    <td>${item.time}</td>
-                    <td>${item.pos}</td>
-                    <td>${item.o2}%</td>
-                    <td>${item.lel}%</td>
-                    <td>${item.co}</td>
-                    <td>${item.co2}%</td>
-                    <td>${item.h2s}</td>
-                    <td>${item.inspector}</td>
-                    <td>${item.watcher}</td>
-                    <td class="btn-action-row">
-                        ${item.status === '승인완료' 
-                            ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveGas('${item.id}')">승인</button>`}
-                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteGas('${item.id}')">삭제</button>
+                    <td>${item.date || ''}</td>
+                    <td>${item.time || ''}</td>
+                    <td>${item.pos || ''}</td>
+                    <td>${item.o2 || ''}%</td>
+                    <td>${item.lel || ''}%</td>
+                    <td>${item.co || ''}ppm</td>
+                    <td>${item.co2 || ''}%</td>
+                    <td>${item.h2s || ''}ppm</td>
+                    <td>${item.inspector || ''}</td>
+                    <td>${item.watcher || ''}</td>
+                    <td class="btn-action-col">
+                        <button class="btn btn-danger" onclick="deleteGasData('${item.id}')" style="padding:2px 6px; font-size:11px;">삭제</button>
                     </td>
                 `;
             } else {
-                tr.innerHTML = `<td>${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="btn-action-row"></td>`;
+                tr.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    <td class="btn-action-col"></td>
+                `;
             }
             tbody.appendChild(tr);
         }
@@ -844,114 +859,78 @@
 
     window.renderEntryTable = function() {
         const tbody = document.getElementById('entryTableBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
         const type = document.getElementById('entrySearchType').value;
         const searchDate = document.getElementById('entrySearchDate').value;
 
-        // 1. 장소 및 일자 조건 필터링
         let filtered = entryLogs.filter(item => {
             return item.location === selectedLocation && filterByDate(item.date, searchDate, type);
         });
 
-        // 2. 작업일자 + 입실시간(inTime) 기준 정렬
         filtered.sort((a, b) => {
             const dateTimeA = `${a.date} ${a.inTime}`;
             const dateTimeB = `${b.date} ${b.inTime}`;
-            if (entrySortOrder === 'asc') {
-                return dateTimeA.localeCompare(dateTimeB); // 오름차순 (과거 -> 최신)
-            } else {
-                return dateTimeB.localeCompare(dateTimeA); // 내림차순 (최신 -> 과거)
-            }
+            return entrySortOrder === 'asc' ? dateTimeA.localeCompare(dateTimeB) : dateTimeB.localeCompare(dateTimeA);
         });
 
-        for (let i = 0; i < Math.max(20, filtered.length); i++) {
+        const rowCount = Math.max(16, filtered.length);
+
+        for (let i = 0; i < rowCount; i++) {
             const item = filtered[i];
             const tr = document.createElement('tr');
-
             if (item) {
-                const isWorking = !item.outTime || item.outTime === '-';
-                const exitDisplay = isWorking ? `<span class="status-badge status-working">작업중</span>` : item.outTime;
-                
+                const exitBtnHTML = item.outTime 
+                    ? item.outTime 
+                    : `<button class="btn btn-warning" onclick="recordExitTime('${item.id}')" style="padding:2px 6px; font-size:11px;">퇴실 기록</button>`;
+
                 tr.innerHTML = `
                     <td>${i + 1}</td>
-                    <td>${item.date}</td>
-                    <td>${item.watcher}</td>
-                    <td>${item.worker}</td>
-                    <td>${item.inTime}</td>
-                    <td>${exitDisplay}</td>
-                    <td>${item.note}</td>
-                    <td class="btn-action-row">
-                        ${isWorking 
-                            ? `<button class="btn btn-warning" style="padding:3px 6px; font-size:10px;" onclick="recordExitTime('${item.id}')">퇴실</button>` 
-                            : ''}
-                        ${item.status === '승인완료' 
-                            ? '<span class="status-badge status-approved">승인완료</span>' 
-                            : `<button class="btn btn-primary" style="padding:3px 6px; font-size:10px;" onclick="approveEntry('${item.id}')">승인</button>`}
-                        <button class="btn btn-danger" style="padding:3px 6px; font-size:10px; margin-left:2px;" onclick="deleteEntry('${item.id}')">삭제</button>
+                    <td>${item.date || ''}</td>
+                    <td>${item.watcher || ''}</td>
+                    <td>${item.worker || ''}</td>
+                    <td>${item.inTime || ''}</td>
+                    <td>${exitBtnHTML}</td>
+                    <td>${item.note || ''}</td>
+                    <td class="btn-action-col">
+                        <button class="btn btn-danger" onclick="deleteEntryData('${item.id}')" style="padding:2px 6px; font-size:11px;">삭제</button>
                     </td>
                 `;
             } else {
-                tr.innerHTML = `<td>${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="btn-action-row"></td>`;
+                tr.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td>
+                    <td class="btn-action-col"></td>
+                `;
             }
             tbody.appendChild(tr);
         }
     };
 
-    function filterByDate(itemDate, targetDate, type) {
-        if (!targetDate) return true;
-        if (type === 'day') return itemDate === targetDate;
-        if (type === 'month') return itemDate.slice(0, 7) === targetDate.slice(0, 7);
-        if (type === 'year') return itemDate.slice(0, 4) === targetDate.slice(0, 4);
-        return true;
-    }
+    window.approveHeader = function(prefix) {
+        const fileInput = document.getElementById(`${prefix}SignFile`);
+        const role = document.getElementById(`${prefix}ApproveRole`).value;
+        const targetTd = document.getElementById(`${prefix}-stamp-${role}`);
 
-    window.approveGas = async function(id) {
-        if (!checkAdminAuth()) return;
-        await updateDoc(doc(db, "gasLogs", id), { status: '승인완료' });
-    };
-
-    window.approveEntry = async function(id) {
-        if (!checkAdminAuth()) return;
-        await updateDoc(doc(doc(db, "entryLogs", id), { status: '승인완료' });
-    };
-
-    window.deleteGas = async function(id) {
-        if (!checkAdminAuth()) return;
-        if (confirm("해당 기록을 삭제하시겠습니까?")) {
-            await deleteDoc(doc(db, "gasLogs", id));
+        if (!fileInput.files || !fileInput.files[0]) {
+            alert("서인/도장 이미지 파일을 선택해주세요.");
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            targetTd.innerHTML = `<img src="${e.target.result}" alt="서명">`;
+            alert("상단 결재 서명이 등록되었습니다.");
+        };
+        reader.readAsDataURL(fileInput.files[0]);
     };
 
-    window.deleteEntry = async function(id) {
-        if (!checkAdminAuth()) return;
-        if (confirm("해당 기록을 삭제하시겠습니까?")) {
-            await deleteDoc(doc(db, "entryLogs", id));
+    window.resetHeaderApproval = function(prefix) {
+        if (confirm("상단 결재란을 모두 초기화하시겠습니까?")) {
+            document.getElementById(`${prefix}-stamp-manager`).innerHTML = '';
+            document.getElementById(`${prefix}-stamp-pl`).innerHTML = '';
+            document.getElementById(`${prefix}-stamp-leader`).innerHTML = '';
         }
-    };
-
-    window.approveHeader = function(docType) {
-        if (!checkAdminAuth()) return;
-        const role = document.getElementById(`${docType}ApproveRole`).value;
-        const fileInput = document.getElementById(`${docType}SignFile`);
-        const targetTd = document.getElementById(`${docType}-stamp-${role}`);
-
-        if (fileInput.files && fileInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                targetTd.innerHTML = `<img src="${e.target.result}" alt="서명">`;
-            };
-            reader.readAsDataURL(fileInput.files[0]);
-        } else {
-            targetTd.innerHTML = '<span style="color:#15803d; font-weight:bold; font-size:10px;">승인</span>';
-        }
-    };
-
-    window.resetHeaderApproval = function(docType) {
-        if (!checkAdminAuth()) return;
-        document.getElementById(`${docType}-stamp-manager`).innerHTML = '';
-        document.getElementById(`${docType}-stamp-pl`).innerHTML = '';
-        document.getElementById(`${docType}-stamp-leader`).innerHTML = '';
-        document.getElementById(`${docType}SignFile`).value = '';
     };
 </script>
 </body>
