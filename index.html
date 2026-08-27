@@ -404,7 +404,7 @@
             </form>
         </div>
 
-        <!-- 2. 출입인원 점검 입력 폼 (입실 중심) -->
+        <!-- 2. 출입인원 점검 입력 폼 -->
         <div id="entry-input" class="tab-content">
             <h3 style="margin-top:0;">작업자 입실 등록</h3>
             <form id="entryForm">
@@ -583,6 +583,16 @@
 </div>
 
 <script>
+    // 공정별 접근 비밀번호 설정 (원하시는 번호로 수정 가능합니다)
+    const LOCATION_PASSWORDS = {
+        '지하수조': '1111',
+        '폐수처리장': '2222',
+        '오수처리장': '3333',
+        '도장공정': '4444',
+        '펌프실': '5555'
+    };
+
+    // 관리자(승인 및 삭제) 비밀번호
     const ADMIN_PASSWORD = "1234";
 
     const getCurrentTimeStr = () => new Date().toTimeString().slice(0,5);
@@ -617,16 +627,25 @@
     }
 
     function selectLocation(locationName) {
-        selectedLocation = locationName;
-        document.getElementById('current-location-title').innerText = `작업장소: [${selectedLocation}]`;
-        document.getElementById('g_location_display').value = selectedLocation;
-        document.getElementById('e_location_display').value = selectedLocation;
-        document.getElementById('gas-doc-location').innerText = selectedLocation;
+        const correctPassword = LOCATION_PASSWORDS[locationName];
+        const inputPw = prompt(`[${locationName}] 접속 비밀번호를 입력해주세요.`);
+        
+        if (inputPw === null) return; // 취소한 경우
+        
+        if (inputPw === correctPassword) {
+            selectedLocation = locationName;
+            document.getElementById('current-location-title').innerText = `작업장소: [${selectedLocation}]`;
+            document.getElementById('g_location_display').value = selectedLocation;
+            document.getElementById('e_location_display').value = selectedLocation;
+            document.getElementById('gas-doc-location').innerText = selectedLocation;
 
-        document.getElementById('location-select-screen').style.display = 'none';
-        document.getElementById('workspace-screen').style.display = 'block';
+            document.getElementById('location-select-screen').style.display = 'none';
+            document.getElementById('workspace-screen').style.display = 'block';
 
-        switchTab('gas-input');
+            switchTab('gas-input');
+        } else {
+            alert("비밀번호가 일치하지 않습니다. 접속할 수 없습니다.");
+        }
     }
 
     function backToLocationSelect() {
@@ -680,7 +699,7 @@
             watcher: document.getElementById('e_watcher').value,
             worker: document.getElementById('e_worker').value,
             inTime: document.getElementById('e_in').value,
-            outTime: '', // 퇴실 전 빈값 처리
+            outTime: '',
             note: document.getElementById('e_note').value,
             status: '미결재'
         };
