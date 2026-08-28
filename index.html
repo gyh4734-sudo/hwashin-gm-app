@@ -393,7 +393,6 @@
                     <div class="form-group"><label>산소 O₂ (18~23.5%)</label><input type="number" step="0.1" inputmode="decimal" id="g_o2" placeholder="%" required></div>
                     <div class="form-group"><label>가연성가스 LEL (&lt;10%)</label><input type="number" step="0.1" inputmode="decimal" id="g_lel" placeholder="%" required></div>
                     <div class="form-group"><label>일산화탄소 CO (&lt;30ppm)</label><input type="number" step="0.1" inputmode="decimal" id="g_co" placeholder="ppm" required></div>
-                    <div class="form-group"><label>이산화탄소 CO₂ (&lt;1.5%)</label><input type="number" step="0.1" inputmode="decimal" id="g_co2" value="0" required></div>
                     <div class="form-group"><label>황화수소 H₂S (&lt;10ppm)</label><input type="number" step="0.1" inputmode="decimal" id="g_h2s" placeholder="ppm" required></div>
                 </div>
                 <div class="form-grid">
@@ -470,7 +469,7 @@
                     </div>
 
                     <div style="font-size: 11px; margin-bottom: 6px;">
-                        <b>적정공기 :</b> 산소 18~23.5% / 이산화탄소 1.5% 미만 / 일산화탄소 30ppm 미만 / 황화수소 10ppm 미만 / 가연성가스 10%LEL 미만
+                        <b>적정공기 :</b> 산소 18~23.5% / 일산화탄소 30ppm 미만 / 황화수소 10ppm 미만 / 가연성가스 10%LEL 미만
                     </div>
 
                     <table class="doc-info-table">
@@ -491,20 +490,19 @@
                             <tr>
                                 <th rowspan="2" style="width: 35px;">NO</th>
                                 <th colspan="2">측정일</th>
-                                <th rowspan="2" style="width: 75px;">측정위치</th>
-                                <th colspan="5">측정결과</th>
-                                <th rowspan="2" style="width: 70px;">측정자</th>
-                                <th rowspan="2" style="width: 70px;">안전감시자</th>
+                                <th rowspan="2" style="width: 80px;">측정위치</th>
+                                <th colspan="4">측정결과</th>
+                                <th rowspan="2" style="width: 75px;">측정자</th>
+                                <th rowspan="2" style="width: 75px;">안전감시자</th>
                                 <th rowspan="2" class="btn-action-col" style="width: 90px;">승인 / 관리</th>
                             </tr>
                             <tr>
-                                <th style="width: 75px;">일자</th>
-                                <th style="width: 50px;">시간</th>
-                                <th style="width: 50px;">산소</th>
-                                <th style="width: 55px;">가연성가스</th>
-                                <th style="width: 55px;">일산화탄소</th>
-                                <th style="width: 55px;">이산화탄소</th>
-                                <th style="width: 55px;">황화수소</th>
+                                <th style="width: 80px;">일자</th>
+                                <th style="width: 55px;">시간</th>
+                                <th style="width: 65px;">산소</th>
+                                <th style="width: 70px;">가연성가스</th>
+                                <th style="width: 70px;">일산화탄소</th>
+                                <th style="width: 70px;">황화수소</th>
                             </tr>
                         </thead>
                         <tbody id="gasTableBody"></tbody>
@@ -590,13 +588,13 @@
     import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
     const firebaseConfig = {
-       apiKey: "AIzaSyBZ2D3cR2oaW3R-7MY-Iwg7kLuXXvIoaTE",
-       authDomain: "hwashin-gm.firebaseapp.com",
-       projectId: "hwashin-gm",
-       storageBucket: "hwashin-gm.firebasestorage.app",
-       messagingSenderId: "89487587050",
-       appId: "1:89487587050:web:6dff1a57b294f893b3c993",
-       measurementId: "G-NTN22JFW6H"
+          apiKey: "AIzaSyBZ2D3cR2oaW3R-7MY-Iwg7kLuXXvIoaTE",
+          authDomain: "hwashin-gm.firebaseapp.com",
+          projectId: "hwashin-gm",
+          storageBucket: "hwashin-gm.firebasestorage.app",
+          messagingSenderId: "89487587050",
+          appId: "1:89487587050:web:92fe09c3fbaf0e4ab3c993",
+          measurementId: "G-3FQ652G2P7"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -734,7 +732,6 @@
             o2: document.getElementById('g_o2').value,
             lel: document.getElementById('g_lel').value,
             co: document.getElementById('g_co').value,
-            co2: document.getElementById('g_co2').value,
             h2s: document.getElementById('g_h2s').value,
             inspector: document.getElementById('g_inspector').value,
             watcher: document.getElementById('g_watcher').value,
@@ -838,7 +835,6 @@
                     <td>${item.o2 || ''}%</td>
                     <td>${item.lel || ''}%</td>
                     <td>${item.co || ''}ppm</td>
-                    <td>${item.co2 || ''}%</td>
                     <td>${item.h2s || ''}ppm</td>
                     <td>${item.inspector || ''}</td>
                     <td>${item.watcher || ''}</td>
@@ -849,7 +845,7 @@
             } else {
                 tr.innerHTML = `
                     <td>${i + 1}</td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
                     <td class="btn-action-col"></td>
                 `;
             }
@@ -913,13 +909,13 @@
         const targetTd = document.getElementById(`${prefix}-stamp-${role}`);
 
         if (!fileInput.files || !fileInput.files[0]) {
-            alert("서인/도장 이미지 파일을 선택해주세요.");
+            alert("서명/도장 이미지 파일을 선택해주세요.");
             return;
         }
 
         const reader = new FileReader();
         reader.onload = function(e) {
-            targetTd.innerHTML = `<img src="${e.target.result}" alt="서명">`;
+            targetTd.innerHTML = `<img src="${e.result}" alt="서명">`;
             alert("상단 결재 서명이 등록되었습니다.");
         };
         reader.readAsDataURL(fileInput.files[0]);
